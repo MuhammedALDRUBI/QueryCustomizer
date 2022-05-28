@@ -14,8 +14,7 @@ class QueryCustomizer{
              $this->ArrayAnalyzerObject = new ArrayAnalyzer();
             return $this;
     }
- 
-
+  
     ///////////////////////////////////
     //this method will handle an insert sql statment ... it just need :
     //@table : table name that you want to insert row into
@@ -28,9 +27,9 @@ class QueryCustomizer{
         $columnsArray = array_keys($ColumnsAndValuesArray);
         $ValuesArray = array_values($ColumnsAndValuesArray);
         $this->queryString = "insert into $table( "; 
-        $this->queryString .=  $this->ArrayAnalyzerObject->HandleindexedArray($columnsArray ,   " " ,   " , " , false);  
+        $this->queryString .=  $this->ArrayAnalyzerObject->indexedArrayPrinter($columnsArray ,   " " ,   " , " , false);  
         $this->queryString .= " )  Values( ";
-        $this->queryString .=  $this->ArrayAnalyzerObject->HandleindexedArray($ValuesArray ,  " " ,   " , " );   
+        $this->queryString .=  $this->ArrayAnalyzerObject->indexedArrayPrinter($ValuesArray ,  " " ,   " , " );   
         $this->queryString .= " ) ;";
         return $this->queryString; 
     }
@@ -43,16 +42,41 @@ class QueryCustomizer{
     // it is nullable array BUT if it there no deletion's conditions ALL rows will be deleted
     //Ex : $conditionsArray = array("Id = 4");
     ///////////////////////////////////
-    public function deleteQueryCustomizer( string $table , Array $conditionsArray = array() ) : string
+    public function deleteQueryCustomizer( string $table , Array $conditionsArray = array()  , $options = array()  ) : string
     { 
+        $options["limit"] = !isset($options["limit"]) ? null : $options["limit"]; 
         $countOfConditions = count($conditionsArray); 
         $this->queryString = "delete from $table ";  
         //Note : if no conditions are there ... all records will be deleted
-        if($countOfConditions == 0){ return $this->queryString; }
-        $this->queryString .= " where " .  $this->ArrayAnalyzerObject->HandleindexedArray($conditionsArray , " " ,  " and " , false);   
+        if($countOfConditions == 0){ $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : "";  return $this->queryString; }
+        $this->queryString .= " where " .  $this->ArrayAnalyzerObject->indexedArrayPrinter($conditionsArray , " " ,  " and " , false);  
+        $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : ""; 
         return $this->queryString; 
     }
+    
+    ///////////////////////////////////
+    //this method will handle a update sql statment ... it just need :
+    //@table : table name that contains rows that you want to update it
+    //
+    //@ColumnsValuesArray : is an associative array that contains the row 's columns and its columns values
+    //
+    //@conditionsArray : is an indexed array that contains updating conditions
+    // it is nullable array BUT if it there no updating's conditions ALL rows will be updated
+    //Ex : $conditionsArray = array("Id = 4");
+    ///////////////////////////////////
+    public function updateQueryCustomizer( string $table , Array $ColumnsValuesArray , Array $conditionsArray = array() , $options = array() ) : string
+    {  
+        $options["limit"] = !isset($options["limit"]) ? null : $options["limit"]; 
+        $this->queryString = "update $table set ";
+        $this->queryString .= $this->ArrayAnalyzerObject->AssocArrayPrinter($ColumnsValuesArray , " " , " = " , " , "); 
 
+        //Note : if no conditions are there ... all records will be deleted
+        $countOfConditions = count($conditionsArray); 
+        if($countOfConditions == 0){$this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : "";  return $this->queryString; }
+        $this->queryString .= " where " . $this->ArrayAnalyzerObject->indexedArrayPrinter($conditionsArray , " " ,  " and " , false);  
+        $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : ""; 
+        return $this->queryString; 
+    }
 
     ///////////////////////////////////
     //this method will handle a select sql statment ... it just need :
@@ -65,44 +89,28 @@ class QueryCustomizer{
     // it is nullable array BUT if it there no selection's conditions ALL rows will be selected
     //Ex : $conditionsArray = array("Id = 4");
     ///////////////////////////////////
-    public function selectQueryCustomizer( string $table , Array $columnsArray = array(), Array $conditionsArray = array() , $limit = 10 , $offset = 0 ) : string
+    public function selectQueryCustomizer( string $table , Array $columnsArray = array(), Array $conditionsArray = array() ,  $options = array() )  : string
     { 
+        $options["limit"] = !isset($options["limit"]) ? null : $options["limit"]; 
+        $options["offset"] = !isset($options["offset"]) ? null : $options["offset"]; 
         if(count($columnsArray) == 0 ){$columnsArray[] =  "*"; }
         $this->queryString = "select ";
-        $this->queryString .= $this->ArrayAnalyzerObject->HandleindexedArray($columnsArray , " " ,  " , " , false);  
+        $this->queryString .= $this->ArrayAnalyzerObject->indexedArrayPrinter($columnsArray , " " ,  " , " , false);  
         $this->queryString .= " from $table ";  
 
         //Note : if no conditions are there ... all records will be deleted
         $countOfConditions = count($conditionsArray); 
-        if($countOfConditions == 0){$this->queryString .= "limit $limit offset $offset "; return $this->queryString; }
-        $this->queryString .= " where " . $this->ArrayAnalyzerObject->HandleindexedArray($conditionsArray , " " ,  " and " , false); 
-        $this->queryString .= "limit $limit offset $offset ";
+        if($countOfConditions == 0){
+            $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : ""; 
+            $this->queryString .= $options["offset"] != null ? " offset " . $options['offset']  : ""; 
+            return $this->queryString; 
+        }
+        $this->queryString .= " where " . $this->ArrayAnalyzerObject->indexedArrayPrinter($conditionsArray , " " ,  " and " , false); 
+        $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : ""; 
+        $this->queryString .= $options["offset"] != null ? " offset " . $options['offset']  : ""; 
         return $this->queryString; 
     }
 
-    
-    ///////////////////////////////////
-    //this method will handle a update sql statment ... it just need :
-    //@table : table name that contains rows that you want to update it
-    //
-    //@ColumnsValuesArray : is an associative array that contains the row 's columns and its columns values
-    //
-    //@conditionsArray : is an indexed array that contains updating conditions
-    // it is nullable array BUT if it there no updating's conditions ALL rows will be updated
-    //Ex : $conditionsArray = array("Id = 4");
-    ///////////////////////////////////
-    public function updateQueryCustomizer( string $table , Array $ColumnsValuesArray , Array $conditionsArray = array() ) : string
-    {  
-         
-        $this->queryString = "update $table set ";
-        $this->queryString .= $this->ArrayAnalyzerObject->HandleAssocArray($ColumnsValuesArray , " " , " = " , " , "); 
-
-        //Note : if no conditions are there ... all records will be deleted
-        $countOfConditions = count($conditionsArray); 
-        if($countOfConditions == 0){ return $this->queryString; }
-        $this->queryString .= " where " . $this->ArrayAnalyzerObject->HandleindexedArray($conditionsArray , " " ,  " and " , false);  
-        return $this->queryString; 
-    }
 
     ///////////////////////////////////
     //this method will handle an inner join sql statment ... it just need :
@@ -116,18 +124,25 @@ class QueryCustomizer{
     //@whereConditions : is an indexed array that contains where conditions that will be applied after join operation is done
     //Ex : $whereConditions = array("users.city = 'Istanbul'" , "posts.created_at > '2011-11-13'");
     ///////////////////////////////////
-    public function innerJoinQueryCustomizer( Array $tableAndColumnsOfEachTableAssocArray , Array $JoinConditions , Array $whereConditions = array()) : string
+    public function innerJoinQueryCustomizer( Array $tableAndColumnsOfEachTableAssocArray , Array $JoinConditions , Array $whereConditions = array() , $options = array() ) : string
     {  
+        $options["limit"] = !isset($options["limit"]) ? null : $options["limit"]; 
+        $options["offset"] = !isset($options["offset"]) ? null : $options["offset"];
         $tableArray = array_keys($tableAndColumnsOfEachTableAssocArray);
         $this->queryString = " select ";
-        $this->queryString .=   $this->ArrayAnalyzerObject->HandleAssocArray($tableAndColumnsOfEachTableAssocArray ,   $keyPrefix = " " , $textBetween = "." , $valSuffix = " , " , false);
-        $this->queryString .= " from " . $this->ArrayAnalyzerObject->HandleindexedArray($tableArray , " " ,  " inner join " , false);  
-        $this->queryString .= " on " . $this->ArrayAnalyzerObject->HandleindexedArray($JoinConditions , " " ,  " and " , false);  
+        $this->queryString .=   $this->ArrayAnalyzerObject->AssocArrayPrinter($tableAndColumnsOfEachTableAssocArray ,   $keyPrefix = " " , $textBetween = "." , $valSuffix = " , " , false);
+        $this->queryString .= " from " . $this->ArrayAnalyzerObject->indexedArrayPrinter($tableArray , " " ,  " inner join " , false);  
+        $this->queryString .= " on " . $this->ArrayAnalyzerObject->indexedArrayPrinter($JoinConditions , " " ,  " and " , false);  
 
         $countOfConditions = count($whereConditions); 
-        if($countOfConditions == 0){ return $this->queryString; }
-        $this->queryString .= " where " . $this->ArrayAnalyzerObject->HandleindexedArray($whereConditions , " " ,  " and " , false);  
-
+        if($countOfConditions == 0){
+            $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : ""; 
+            $this->queryString .= $options["offset"] != null ? " offset " . $options['offset']  : "";
+            return $this->queryString; 
+        }
+        $this->queryString .= " where " . $this->ArrayAnalyzerObject->indexedArrayPrinter($whereConditions , " " ,  " and " , false);  
+        $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : ""; 
+        $this->queryString .= $options["offset"] != null ? " offset " . $options['offset']  : "";
         return  $this->queryString ;
     }
     
@@ -151,21 +166,28 @@ class QueryCustomizer{
     //@whereConditions : is an indexed array that contains where conditions that will be applied after join operation is done
     //Ex : $whereConditions = array("users.city = 'Istanbul'" , "posts.created_at > '2011-11-13'");
     ///////////////////////////////////
-    public function complexJoinQueryCustomizer( Array $tableAndColumnsOfEachTableAssocArray , string $LeftTableName ,  Array $RightTableName_joinType_Array , Array $table_joinConsitions , Array $whereConditions = array()) : string
+    public function complexJoinQueryCustomizer( Array $tableAndColumnsOfEachTableAssocArray , string $LeftTableName ,  Array $RightTableName_joinType_Array , Array $table_joinConsitions , Array $whereConditions = array() ,  $options = array() ) : string
     {   
+        $options["limit"] = !isset($options["limit"]) ? null : $options["limit"]; 
+        $options["offset"] = !isset($options["offset"]) ? null : $options["offset"];
         $tableArray = array_keys($tableAndColumnsOfEachTableAssocArray);
         $countOfTables = count($tableArray);
         $this->queryString = " select ";
-        $this->queryString .=   $this->ArrayAnalyzerObject->HandleAssocArray($tableAndColumnsOfEachTableAssocArray ,   $keyPrefix = " " , $textBetween = "." , $valSuffix = " , " , false);
+        $this->queryString .=   $this->ArrayAnalyzerObject->AssocArrayPrinter($tableAndColumnsOfEachTableAssocArray ,   $keyPrefix = " " , $textBetween = "." , $valSuffix = " , " , false);
         $this->queryString .= " from  $LeftTableName " ;
 
         foreach($RightTableName_joinType_Array as $table => $joinType){
             $this->queryString .= " $joinType join $table on  $table_joinConsitions[$table] ";
         }           
         $countOfConditions = count($whereConditions); 
-        if($countOfConditions == 0){ return $this->queryString; }
-        $this->queryString .= " where " . $this->ArrayAnalyzerObject->HandleindexedArray($whereConditions , " " ,  " and " , false);  
-
+        if($countOfConditions == 0){
+            $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : ""; 
+            $this->queryString .= $options["offset"] != null ? " offset " . $options['offset']  : "";
+            return $this->queryString; 
+        }
+        $this->queryString .= " where " . $this->ArrayAnalyzerObject->indexedArrayPrinter($whereConditions , " " ,  " and " , false);  
+        $this->queryString .= $options["limit"] != null ? " limit " . $options['limit']   : ""; 
+        $this->queryString .= $options["offset"] != null ? " offset " . $options['offset']  : "";
         return  $this->queryString ;
     }
 
@@ -179,7 +201,7 @@ class QueryCustomizer{
     public function unionQueryCustomizer( Array $ArrayOfSelectionQueries , $unionAll = false) : string
     {  
         $textAfterValue = $unionAll ? " union all " : " union ";
-        $this->queryString = $this->ArrayAnalyzerObject->HandleindexedArray($ArrayOfSelectionQueries , " " ,  " $textAfterValue " , false) ;
+        $this->queryString = $this->ArrayAnalyzerObject->indexedArrayPrinter($ArrayOfSelectionQueries , " " ,  " $textAfterValue " , false) ;
         return  $this->queryString ;
     }
 
