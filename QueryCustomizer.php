@@ -65,7 +65,7 @@ class QueryCustomizer{
     // it is nullable array BUT if it there no selection's conditions ALL rows will be selected
     //Ex : $conditionsArray = array("Id = 4");
     ///////////////////////////////////
-    public function selectQueryCustomizer( string $table , Array $columnsArray = array(), Array $conditionsArray = array() ) : string
+    public function selectQueryCustomizer( string $table , Array $columnsArray = array(), Array $conditionsArray = array() , $limit = 10 , $offset = 0 ) : string
     { 
         if(count($columnsArray) == 0 ){$columnsArray[] =  "*"; }
         $this->queryString = "select ";
@@ -74,8 +74,9 @@ class QueryCustomizer{
 
         //Note : if no conditions are there ... all records will be deleted
         $countOfConditions = count($conditionsArray); 
-        if($countOfConditions == 0){ return $this->queryString; }
+        if($countOfConditions == 0){$this->queryString .= "limit $limit offset $offset "; return $this->queryString; }
         $this->queryString .= " where " . $this->ArrayAnalyzerObject->HandleindexedArray($conditionsArray , " " ,  " and " , false); 
+        $this->queryString .= "limit $limit offset $offset ";
         return $this->queryString; 
     }
 
@@ -193,6 +194,6 @@ class QueryCustomizer{
         $dbName = '"' . $dbName . '"';
         $table = '"' . $table . '"';
         $column = '"' . $column . '"';
-        return $this->queryString = "select count(COLUMNS.COLUMN_NAME) as count from COLUMNS where COLUMNS.TABLE_SCHEMA = $dbName and  COLUMNS.TABLE_NAME =  $table  and COLUMNS.COLUMN_NAME =  $column ";
+        return $this->queryString = "select count(COLUMN_NAME) as count from information_schema.COLUMNS where TABLE_SCHEMA = $dbName and  TABLE_NAME =  $table  and information_schema.COLUMNS.COLUMN_NAME =  $column ";
     }
 }
