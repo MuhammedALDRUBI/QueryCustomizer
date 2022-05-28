@@ -3,14 +3,35 @@
 class ArrayAnalyzer{
 
     ///////////////////////////////////
+    //this method will return the dimension of any array will be passing into it
+    // it is used by indexedArrayPrinter and AssocArrayPrinter methodes to check if they could handling the array that they received or need to call multiDimensional Methodes
+    ///////////////////////////////////
+    public function getArrayDimension(Array $array){
+        if (is_array(reset($array)))
+        {
+             $dimension = $this->getArrayDimension(reset($array)) + 1; 
+        }else{ $dimension = 1;} 
+        return $dimension;
+    }
+
+    ///////////////////////////////////
+    // it is a simple method to check if an array is indexed array or not
+    ///////////////////////////////////
+    public function isIndexed(Array $array){
+        foreach($array as $key => $val){
+            return is_numeric($key);
+        }
+    } 
+    
+    ///////////////////////////////////
     //this method handling indexed arraies
     //
     //@indexedArray is an indexed array that you want to adding an @ElementPrefix before its value , and want to adding an @ElementSuffix after that value
     //if @stringCapsulation is false the string values will not encapsulate in a double quotation (you will need it when you handling an sql query)
     ///////////////////////////////////
-    public function HandleindexedArray(Array $indexedArray , $ElementPrefix = " " , $ElementSuffix = " " ,  $stringCapsulation = true){
+    public function indexedArrayPrinter(Array $indexedArray , $ElementPrefix = " " , $ElementSuffix = " " ,  $stringCapsulation = true){
         $dimension = $this->getArrayDimension($indexedArray); 
-        if($dimension > 1){ return $this->HandleMultiDimensionIndexedArray( $indexedArray , $ElementPrefix ,  $ElementSuffix , $stringCapsulation);}
+        if($dimension > 1){ return $this->MultiDimensionalIndexedArrayPrinter( $indexedArray , $ElementPrefix ,  $ElementSuffix , $stringCapsulation);}
        
         $elementIndex = 0; 
         $elementCount = count($indexedArray);
@@ -29,10 +50,10 @@ class ArrayAnalyzer{
     }
 
     ///////////////////////////////////
-    // it is a private method .... it used automatically by HandleindexedArray method when it received a mult dimensional array 
+    // it is a private method .... it used automatically by indexedArrayPrinter method when it received a mult dimensional array 
     // you will not need to use it directly
     ///////////////////////////////////
-    private function HandleMultiDimensionIndexedArray(Array $indexedArray ,  $ElementPrefix = " " ,  $ElementSuffix = " " , $stringCapsulation = true ){ 
+    private function MultiDimensionalIndexedArrayPrinter(Array $indexedArray ,  $ElementPrefix = " " ,  $ElementSuffix = " " , $stringCapsulation = true ){ 
         $string = "";  
         $ArraySuffix = $ElementSuffix;
         
@@ -44,11 +65,11 @@ class ArrayAnalyzer{
                 $ArraySuffix = "";
             } 
             if($isArrayIndexed){  
-                $string .= $this->HandleindexedArray( $currentArray  , $ElementPrefix , $ElementSuffix   , $stringCapsulation ) . $ArraySuffix;
+                $string .= $this->indexedArrayPrinter( $currentArray  , $ElementPrefix , $ElementSuffix   , $stringCapsulation ) . $ArraySuffix;
                 continue;
             }
             
-            $string .= $this->HandleAssocArray($currentArray ,   $ElementPrefix , " = " , $ElementSuffix  , $stringCapsulation) . $ArraySuffix; 
+            $string .= $this->AssocArrayPrinter($currentArray ,   $ElementPrefix , " = " , $ElementSuffix  , $stringCapsulation) . $ArraySuffix; 
         } 
         return $string;
     }
@@ -60,9 +81,9 @@ class ArrayAnalyzer{
     // and want to adding @textBetween between that key and its value
     //if @stringCapsulation is false the string values will not encapsulate in a double quotation (you will need it when you handling an sql query)
     ///////////////////////////////////
-    public function HandleAssocArray(Array $AssocArray ,   $keyPrefix = " " , $textBetween = " " , $valSuffix = " " , $stringCapsulation = true){
+    public function AssocArrayPrinter(Array $AssocArray ,   $keyPrefix = " " , $textBetween = " " , $valSuffix = " " , $stringCapsulation = true){
         $dimension = $this->getArrayDimension($AssocArray);
-        if($dimension > 1){ return $this->HandleMultiDimensionAssocArray( $AssocArray ,  $keyPrefix  , $textBetween  ,  $valSuffix , $stringCapsulation  );}
+        if($dimension > 1){ return $this->MultiDimensionalAssocArrayPrinter( $AssocArray ,  $keyPrefix  , $textBetween  ,  $valSuffix , $stringCapsulation  );}
 
         $elementIndex = 0; 
         $elementCount = count($AssocArray);
@@ -79,7 +100,7 @@ class ArrayAnalyzer{
                 $string .=  $keyPrefix . $key  . $textBetween . $val . $valSuffix;
             }
             if(is_array($val)){
-                $string .= $this->HandleAssocArray($val ,  $keyPrefix . $key , $textBetween , $valSuffix , $stringCapsulation) ;  
+                $string .= $this->AssocArrayPrinter($val ,  $keyPrefix . $key , $textBetween , $valSuffix , $stringCapsulation) ;  
             }
              
             $elementIndex++;
@@ -88,10 +109,10 @@ class ArrayAnalyzer{
     }
 
     ///////////////////////////////////
-    // it is a private method .... it used automatically by HandleAssocArray method when it received a mult dimensional array 
+    // it is a private method .... it used automatically by AssocArrayPrinter method when it received a mult dimensional array 
     // you will not need to use it directly
     ///////////////////////////////////
-    private function HandleMultiDimensionAssocArray(Array $AssocArray ,  $keyPrefix = " " ,  $textBetween = " " , $valSuffix = " " , $stringCapsulation = true ){
+    private function MultiDimensionalAssocArrayPrinter(Array $AssocArray ,  $keyPrefix = " " ,  $textBetween = " " , $valSuffix = " " , $stringCapsulation = true ){
         
         $string = "";
         $elementIndex = 0; 
@@ -106,33 +127,13 @@ class ArrayAnalyzer{
 
 
             if($this->isIndexed($val)){
-                $string .=   $this->HandleindexedArray($val  ,   $keyPrefix . $key . $textBetween  ,  $valSuffix , $stringCapsulation  ) . $ArraySuffix;
+                $string .=   $this->indexedArrayPrinter($val  ,   $keyPrefix . $key . $textBetween  ,  $valSuffix , $stringCapsulation  ) . $ArraySuffix;
                 continue;
             }
-            $string .=  $this->HandleAssocArray($val , $keyPrefix .  $key ,  $textBetween , $valSuffix , $stringCapsulation) . $ArraySuffix;
+            $string .=  $this->AssocArrayPrinter($val , $keyPrefix .  $key ,  $textBetween , $valSuffix , $stringCapsulation) . $ArraySuffix;
              
         }
         return $string;
     }
-
-    ///////////////////////////////////
-    //this method will return the dimension of any array will be passing into it
-    // it is used by HandleindexedArray and HandleAssocArray methodes to check if they could handling the array that they received or need to call multiDimensional Methodes
-    ///////////////////////////////////
-    public function getArrayDimension(Array $array){
-        if (is_array(reset($array)))
-        {
-             $dimension = $this->getArrayDimension(reset($array)) + 1; 
-        }else{ $dimension = 1;} 
-        return $dimension;
-    }
-
-    ///////////////////////////////////
-    // it is a simple method to check if an array is indexed array or not
-    ///////////////////////////////////
-    public function isIndexed(Array $array){
-        foreach($array as $key => $val){
-            return is_numeric($key);
-        }
-    }       
+      
 }
